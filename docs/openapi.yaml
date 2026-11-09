@@ -1,0 +1,654 @@
+openapi: 3.0.3
+info:
+  title: Tykket Backend API
+  description: Work Management & Issue Tracking System Backend API (Jira / Linear alternative)
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development Server
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: Luqmanul Hakim
+                email:
+                  type: string
+                  format: email
+                  example: luqman@tykket.dev
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        201:
+          description: User registered successfully
+        400:
+          description: Validation error
+        409:
+          description: Email already registered
+
+  /auth/login:
+    post:
+      summary: User login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: owner@tykket.dev
+                password:
+                  type: string
+                  example: password123
+      responses:
+        200:
+          description: Login successful (returns tokens)
+        401:
+          description: Invalid email or password
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        200:
+          description: Token refreshed
+        401:
+          description: Invalid or expired refresh token
+
+  /auth/me:
+    get:
+      summary: Get current authenticated user profile
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: User profile retrieved
+        401:
+          description: Unauthorized
+
+  /projects:
+    get:
+      summary: List all projects user belongs to
+      tags: [Projects]
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: List of projects
+    post:
+      summary: Create a new project
+      tags: [Projects]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, key]
+              properties:
+                name:
+                  type: string
+                  example: Tykket Mobile App
+                key:
+                  type: string
+                  example: MOB
+                  description: 2-10 uppercase alphanumeric characters
+                description:
+                  type: string
+                  example: iOS and Android client applications
+      responses:
+        201:
+          description: Project created
+        409:
+          description: Project key already in use
+
+  /projects/{projectId}:
+    get:
+      summary: Get project details
+      tags: [Projects]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Project details
+    put:
+      summary: Update project name and description
+      tags: [Projects]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        200:
+          description: Project updated
+    delete:
+      summary: Delete project (Owner only)
+      tags: [Projects]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Project deleted
+
+  /projects/{projectId}/members:
+    get:
+      summary: List project members
+      tags: [Members]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Member list
+    post:
+      summary: Add or invite member to project
+      tags: [Members]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                role_name:
+                  type: string
+                  enum: [OWNER, ADMIN, MEMBER, VIEWER]
+      responses:
+        201:
+          description: Member added
+
+  /projects/{projectId}/members/{userId}:
+    put:
+      summary: Update member role
+      tags: [Members]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role_name]
+              properties:
+                role_name:
+                  type: string
+                  enum: [ADMIN, MEMBER, VIEWER]
+      responses:
+        200:
+          description: Role updated
+    delete:
+      summary: Remove member from project
+      tags: [Members]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Member removed
+
+  /projects/{projectId}/sprints:
+    get:
+      summary: List all sprints in project
+      tags: [Sprints]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Sprints list
+    post:
+      summary: Create sprint
+      tags: [Sprints]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: Sprint 4 - Performance
+                goal:
+                  type: string
+                  example: Reduce query latency by 50%
+                start_date:
+                  type: string
+                  format: date-time
+                end_date:
+                  type: string
+                  format: date-time
+      responses:
+        201:
+          description: Sprint created
+
+  /projects/{projectId}/sprints/{sprintId}/start:
+    post:
+      summary: Start sprint (validates only 1 active sprint per project)
+      tags: [Sprints]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sprintId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Sprint started
+        409:
+          description: Another sprint is already active in this project
+
+  /projects/{projectId}/sprints/{sprintId}/complete:
+    post:
+      summary: Complete sprint and reconcile incomplete issues
+      tags: [Sprints]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sprintId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                move_incomplete_to_sprint_id:
+                  type: string
+                  format: uuid
+                  description: Optional target sprint ID. If omitted, incomplete issues move to Backlog.
+      responses:
+        200:
+          description: Sprint completed
+
+  /projects/{projectId}/issues:
+    get:
+      summary: Query issues with filtering and pagination
+      tags: [Issues]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sprint_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: in_backlog
+          in: query
+          schema:
+            type: boolean
+          description: Set true to query Backlog issues (sprint_id IS NULL)
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [EPIC, STORY, TASK, BUG, SUBTASK]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE]
+        - name: assignee_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        200:
+          description: Filtered issues list with pagination meta
+    post:
+      summary: Create a new issue (atomic ticket key generation, e.g. TYK-1)
+      tags: [Issues]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, priority, title]
+              properties:
+                type:
+                  type: string
+                  enum: [EPIC, STORY, TASK, BUG, SUBTASK]
+                priority:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH, URGENT]
+                title:
+                  type: string
+                  example: Implement user session management
+                description:
+                  type: string
+                sprint_id:
+                  type: string
+                  format: uuid
+                parent_id:
+                  type: string
+                  format: uuid
+                  description: Required for SUBTASK (must be STORY/TASK). Must be null for EPIC. Must be EPIC for STORY/TASK/BUG.
+                assignee_id:
+                  type: string
+                  format: uuid
+                story_points:
+                  type: integer
+                  example: 5
+                position:
+                  type: number
+                  format: double
+                  example: 65535.0
+      responses:
+        201:
+          description: Issue created
+        400:
+          description: Hierarchy rule violation or invalid input
+
+  /issues/{key}:
+    get:
+      summary: Global issue lookup by key (e.g. TYK-5)
+      tags: [Issues]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            example: TYK-5
+      responses:
+        200:
+          description: Issue details
+        404:
+          description: Issue not found
+
+  /projects/{projectId}/issues/{issueId}/move:
+    patch:
+      summary: Move issue on interactive board (fractional index & column transition)
+      tags: [Issues]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [position]
+              properties:
+                status:
+                  type: string
+                  enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE]
+                position:
+                  type: number
+                  format: double
+                  example: 10150.0
+                sprint_id:
+                  type: string
+                  format: uuid
+      responses:
+        200:
+          description: Issue position and status updated
+
+  /projects/{projectId}/metrics:
+    get:
+      summary: Project summary metrics (status and priority distributions)
+      tags: [Metrics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Project metrics
+
+  /projects/{projectId}/sprints/{sprintId}/burndown:
+    get:
+      summary: Sprint burndown chart calculation
+      tags: [Metrics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sprintId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Sprint burndown points
+
+  /projects/{projectId}/export/csv:
+    get:
+      summary: Download issues export as streaming CSV file
+      tags: [Metrics]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sprint_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: in_backlog
+          in: query
+          schema:
+            type: boolean
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: CSV file stream
+          content:
+            text/csv:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
