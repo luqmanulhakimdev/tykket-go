@@ -18,6 +18,7 @@ type RouterConfig struct {
 	IssueHandler   *handler.IssueHandler
 	MetricHandler  *handler.MetricHandler
 	UploadHandler  *handler.UploadHandler
+	CommentHandler *handler.CommentHandler
 }
 
 func SetupRoutes(cfg RouterConfig) {
@@ -45,6 +46,16 @@ func SetupRoutes(cfg RouterConfig) {
 	// File & Image Upload Route for rich text editor and attachments
 	if cfg.UploadHandler != nil {
 		v1.POST("/upload", cfg.UploadHandler.UploadFile, authMiddleware)
+	}
+
+	// Issue Comments Direct Routes
+	if cfg.CommentHandler != nil {
+		v1.GET("/issues/:issueId/comments", cfg.CommentHandler.ListByIssue, authMiddleware)
+		v1.POST("/issues/:issueId/comments", cfg.CommentHandler.Create, authMiddleware)
+		v1.PUT("/issues/:issueId/comments/:commentId", cfg.CommentHandler.Update, authMiddleware)
+		v1.DELETE("/issues/:issueId/comments/:commentId", cfg.CommentHandler.Delete, authMiddleware)
+		v1.PUT("/comments/:commentId", cfg.CommentHandler.Update, authMiddleware)
+		v1.DELETE("/comments/:commentId", cfg.CommentHandler.Delete, authMiddleware)
 	}
 
 	// =========================================================================
@@ -84,6 +95,14 @@ func SetupRoutes(cfg RouterConfig) {
 	projectsGroup.PUT("/:projectId/issues/:issueId", cfg.IssueHandler.Update, middleware.RequirePermission(rbacRepo, domain.PermIssueUpdate))
 	projectsGroup.PATCH("/:projectId/issues/:issueId/move", cfg.IssueHandler.Move, middleware.RequirePermission(rbacRepo, domain.PermIssueUpdate))
 	projectsGroup.DELETE("/:projectId/issues/:issueId", cfg.IssueHandler.Delete, middleware.RequirePermission(rbacRepo, domain.PermIssueDelete))
+
+	// Issue Comments (Project Scoped)
+	if cfg.CommentHandler != nil {
+		projectsGroup.GET("/:projectId/issues/:issueId/comments", cfg.CommentHandler.ListByIssue)
+		projectsGroup.POST("/:projectId/issues/:issueId/comments", cfg.CommentHandler.Create)
+		projectsGroup.PUT("/:projectId/issues/:issueId/comments/:commentId", cfg.CommentHandler.Update)
+		projectsGroup.DELETE("/:projectId/issues/:issueId/comments/:commentId", cfg.CommentHandler.Delete)
+	}
 
 	// =========================================================================
 	// 5. Metrics, Reporting & Export Routes

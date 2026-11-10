@@ -69,6 +69,7 @@ func main() {
 	sprintRepo := postgres.NewSprintRepository(dbPool)
 	issueRepo := postgres.NewIssueRepository(dbPool)
 	metricRepo := postgres.NewMetricRepository(dbPool)
+	commentRepo := postgres.NewCommentRepository(dbPool)
 
 	// 6. Initialize Business Logic (Usecases)
 	authUsecase := usecase.NewAuthUsecase(userRepo, tokenMgr)
@@ -76,6 +77,7 @@ func main() {
 	sprintUsecase := usecase.NewSprintUsecase(sprintRepo, issueRepo)
 	issueUsecase := usecase.NewIssueUsecase(issueRepo, projectRepo, sprintRepo)
 	metricUsecase := usecase.NewMetricUsecase(metricRepo, issueRepo, projectRepo, sprintRepo)
+	commentUsecase := usecase.NewCommentUsecase(commentRepo, issueRepo, projectRepo, rbacRepo)
 
 	// 7. Initialize Delivery Handlers
 	authHandler := handler.NewAuthHandler(authUsecase)
@@ -83,6 +85,7 @@ func main() {
 	sprintHandler := handler.NewSprintHandler(sprintUsecase)
 	issueHandler := handler.NewIssueHandler(issueUsecase)
 	metricHandler := handler.NewMetricHandler(metricUsecase)
+	commentHandler := handler.NewCommentHandler(commentUsecase, issueRepo)
 	uploadDir := "uploads"
 	_ = os.MkdirAll(uploadDir, 0755)
 	uploadHandler := handler.NewUploadHandler(uploadDir)
@@ -162,6 +165,7 @@ func main() {
 		IssueHandler:   issueHandler,
 		MetricHandler:  metricHandler,
 		UploadHandler:  uploadHandler,
+		CommentHandler: commentHandler,
 	})
 
 	// 10. Start Server with Graceful Shutdown
