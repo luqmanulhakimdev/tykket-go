@@ -21,6 +21,7 @@ func TestSetupRoutes(t *testing.T) {
 		SprintHandler:  &handler.SprintHandler{},
 		IssueHandler:   &handler.IssueHandler{},
 		MetricHandler:  &handler.MetricHandler{},
+		UploadHandler:  handler.NewUploadHandler("uploads"),
 	}
 
 	SetupRoutes(cfg)
@@ -33,6 +34,7 @@ func TestSetupRoutes(t *testing.T) {
 	foundRegister := false
 	foundProjects := false
 	foundIssues := false
+	foundUpload := false
 	for _, r := range routes {
 		if r.Path == "/api/v1/auth/register" {
 			foundRegister = true
@@ -43,10 +45,13 @@ func TestSetupRoutes(t *testing.T) {
 		if r.Path == "/api/v1/projects/:projectId/issues" {
 			foundIssues = true
 		}
+		if r.Path == "/api/v1/upload" {
+			foundUpload = true
+		}
 	}
 
-	if !foundRegister || !foundProjects || !foundIssues {
-		t.Errorf("missing expected routes in Echo instance: register=%v, projects=%v, issues=%v",
-			foundRegister, foundProjects, foundIssues)
+	if !foundRegister || !foundProjects || !foundIssues || !foundUpload {
+		t.Errorf("missing expected routes in Echo instance: register=%v, projects=%v, issues=%v, upload=%v",
+			foundRegister, foundProjects, foundIssues, foundUpload)
 	}
 }

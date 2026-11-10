@@ -83,6 +83,9 @@ func main() {
 	sprintHandler := handler.NewSprintHandler(sprintUsecase)
 	issueHandler := handler.NewIssueHandler(issueUsecase)
 	metricHandler := handler.NewMetricHandler(metricUsecase)
+	uploadDir := "uploads"
+	_ = os.MkdirAll(uploadDir, 0755)
+	uploadHandler := handler.NewUploadHandler(uploadDir)
 
 	// 8. Initialize HTTP Server & Common Middleware
 	e := echo.New()
@@ -145,6 +148,9 @@ func main() {
 		return c.HTML(http.StatusOK, html)
 	})
 
+	// Static file serving for uploads (images, attachments)
+	e.Static("/uploads", uploadDir)
+
 	// 9. Register API Routes
 	deliveryHttp.SetupRoutes(deliveryHttp.RouterConfig{
 		Echo:           e,
@@ -155,6 +161,7 @@ func main() {
 		SprintHandler:  sprintHandler,
 		IssueHandler:   issueHandler,
 		MetricHandler:  metricHandler,
+		UploadHandler:  uploadHandler,
 	})
 
 	// 10. Start Server with Graceful Shutdown

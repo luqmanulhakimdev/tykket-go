@@ -17,6 +17,7 @@ type RouterConfig struct {
 	SprintHandler  *handler.SprintHandler
 	IssueHandler   *handler.IssueHandler
 	MetricHandler  *handler.MetricHandler
+	UploadHandler  *handler.UploadHandler
 }
 
 func SetupRoutes(cfg RouterConfig) {
@@ -40,6 +41,11 @@ func SetupRoutes(cfg RouterConfig) {
 
 	// Global lookup for issue by key (e.g., /api/v1/issues/TYK-42)
 	v1.GET("/issues/:key", cfg.IssueHandler.GetByKey, authMiddleware)
+
+	// File & Image Upload Route for rich text editor and attachments
+	if cfg.UploadHandler != nil {
+		v1.POST("/upload", cfg.UploadHandler.UploadFile, authMiddleware)
+	}
 
 	// =========================================================================
 	// 2. Project Routes (Protected)

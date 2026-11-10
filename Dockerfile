@@ -41,7 +41,7 @@ COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/docs /app/docs
 
 # Set ownership to non-root user
-RUN chown -R appuser:appgroup /app
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
 
 USER appuser
 
