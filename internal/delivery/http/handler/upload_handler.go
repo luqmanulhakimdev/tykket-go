@@ -73,10 +73,16 @@ func (h *UploadHandler) UploadFile(c echo.Context) error {
 	}
 
 	fileURL := fmt.Sprintf("/uploads/%s", sanitizedName)
+	fullURL := fileURL
+	scheme := c.Scheme()
+	host := c.Request().Host
+	if scheme != "" && host != "" {
+		fullURL = fmt.Sprintf("%s://%s%s", scheme, host, fileURL)
+	}
 
 	result := UploadResult{
-		Location: fileURL,
-		URL:      fileURL,
+		Location: fullURL,
+		URL:      fullURL,
 		Filename: file.Filename,
 		Size:     file.Size,
 		MimeType: file.Header.Get("Content-Type"),
@@ -85,8 +91,8 @@ func (h *UploadHandler) UploadFile(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"success":  true,
 		"message":  "File uploaded successfully",
-		"location": fileURL,
-		"url":      fileURL,
+		"location": fullURL,
+		"url":      fullURL,
 		"data":     result,
 	})
 }
