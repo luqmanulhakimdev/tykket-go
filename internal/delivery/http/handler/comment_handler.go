@@ -165,3 +165,4 @@ func (h *CommentHandler) Delete(c echo.Context) error {
 
 	return response.OK(c, "Comment deleted successfully", nil)
 }
+

@@ -41,3 +41,4 @@ type CommentUsecase interface {
 	UpdateComment(ctx context.Context, userID, commentID uuid.UUID, req UpdateCommentRequest) (*Comment, error)
 	DeleteComment(ctx context.Context, userID, commentID uuid.UUID) error
 }
+

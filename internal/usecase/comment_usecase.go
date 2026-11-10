@@ -128,3 +128,4 @@ func (u *commentUsecase) DeleteComment(
 
 	return domain.ErrForbidden
 }
+
