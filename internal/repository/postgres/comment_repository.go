@@ -25,8 +25,8 @@ func (r *commentRepository) Create(ctx context.Context, c *domain.Comment) error
 	}
 
 	query := `
-		INSERT INTO comments (id, issue_id, user_id, content, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, NOW(), NOW())
+		INSERT INTO comments (id, issue_id, user_id, parent_id, content, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 
@@ -34,6 +34,7 @@ func (r *commentRepository) Create(ctx context.Context, c *domain.Comment) error
 		c.ID,
 		c.IssueID,
 		c.UserID,
+		c.ParentID,
 		c.Content,
 	).Scan(&c.CreatedAt, &c.UpdatedAt)
 
@@ -47,7 +48,7 @@ func (r *commentRepository) Create(ctx context.Context, c *domain.Comment) error
 func (r *commentRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Comment, error) {
 	query := `
 		SELECT 
-			c.id, c.issue_id, c.user_id, c.content, c.created_at, c.updated_at, c.deleted_at,
+			c.id, c.issue_id, c.user_id, c.parent_id, c.content, c.created_at, c.updated_at, c.deleted_at,
 			u.id, u.email, u.name, u.avatar_url
 		FROM comments c
 		INNER JOIN users u ON u.id = c.user_id
@@ -61,6 +62,7 @@ func (r *commentRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 		&comment.ID,
 		&comment.IssueID,
 		&comment.UserID,
+		&comment.ParentID,
 		&comment.Content,
 		&comment.CreatedAt,
 		&comment.UpdatedAt,
@@ -85,7 +87,7 @@ func (r *commentRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 func (r *commentRepository) ListByIssueID(ctx context.Context, issueID uuid.UUID) ([]domain.Comment, error) {
 	query := `
 		SELECT 
-			c.id, c.issue_id, c.user_id, c.content, c.created_at, c.updated_at, c.deleted_at,
+			c.id, c.issue_id, c.user_id, c.parent_id, c.content, c.created_at, c.updated_at, c.deleted_at,
 			u.id, u.email, u.name, u.avatar_url
 		FROM comments c
 		INNER JOIN users u ON u.id = c.user_id
@@ -99,7 +101,7 @@ func (r *commentRepository) ListByIssueID(ctx context.Context, issueID uuid.UUID
 	}
 	defer rows.Close()
 
-	var comments []domain.Comment
+	var allComments []domain.Comment
 	for rows.Next() {
 		var c domain.Comment
 		var u domain.User
@@ -107,6 +109,7 @@ func (r *commentRepository) ListByIssueID(ctx context.Context, issueID uuid.UUID
 			&c.ID,
 			&c.IssueID,
 			&c.UserID,
+			&c.ParentID,
 			&c.Content,
 			&c.CreatedAt,
 			&c.UpdatedAt,
@@ -119,14 +122,60 @@ func (r *commentRepository) ListByIssueID(ctx context.Context, issueID uuid.UUID
 			return nil, fmt.Errorf("failed to scan comment row: %w", err)
 		}
 		c.User = &u
-		comments = append(comments, c)
+		c.Replies = []domain.Comment{}
+		allComments = append(allComments, c)
 	}
 
-	if comments == nil {
-		comments = []domain.Comment{}
+	// Build threaded comment structure (root comments with nested replies)
+	commentMap := make(map[uuid.UUID]*domain.Comment)
+	for i := range allComments {
+		commentMap[allComments[i].ID] = &allComments[i]
 	}
 
-	return comments, nil
+	// Helper to find the root comment for any ancestor chain
+	findRootComment := func(c *domain.Comment) *domain.Comment {
+		curr := c
+		visited := make(map[uuid.UUID]bool)
+		for curr.ParentID != nil {
+			if visited[curr.ID] {
+				break
+			}
+			visited[curr.ID] = true
+			parent, exists := commentMap[*curr.ParentID]
+			if !exists {
+				break
+			}
+			curr = parent
+		}
+		return curr
+	}
+
+	// First pass: attach all replies to their thread root
+	for i := range allComments {
+		if allComments[i].ParentID != nil {
+			root := findRootComment(&allComments[i])
+			if root != nil && root.ID != allComments[i].ID {
+				root.Replies = append(root.Replies, allComments[i])
+			}
+		}
+	}
+
+	// Second pass: collect root comments with their replies populated
+	var rootComments []domain.Comment
+	for i := range allComments {
+		if allComments[i].ParentID == nil {
+			rootComments = append(rootComments, allComments[i])
+		} else if _, exists := commentMap[*allComments[i].ParentID]; !exists {
+			// Orphaned comment fallback
+			rootComments = append(rootComments, allComments[i])
+		}
+	}
+
+	if rootComments == nil {
+		rootComments = []domain.Comment{}
+	}
+
+	return rootComments, nil
 }
 
 func (r *commentRepository) Update(ctx context.Context, c *domain.Comment) error {

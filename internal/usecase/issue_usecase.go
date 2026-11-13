@@ -189,7 +189,18 @@ func (u *issueUsecase) UpdateIssue(ctx context.Context, projectID, issueID uuid.
 		issue.StoryPoints = req.StoryPoints
 	}
 	if req.SprintID != nil {
-		issue.SprintID = req.SprintID
+		if *req.SprintID == uuid.Nil {
+			issue.SprintID = nil
+		} else {
+			sprint, err := u.sprintRepo.GetByID(ctx, *req.SprintID)
+			if err != nil {
+				return nil, fmt.Errorf("%w: sprint not found", domain.ErrNotFound)
+			}
+			if sprint.ProjectID != projectID {
+				return nil, fmt.Errorf("%w: sprint does not belong to project", domain.ErrForbidden)
+			}
+			issue.SprintID = req.SprintID
+		}
 	}
 
 	if err := u.issueRepo.Update(ctx, issue); err != nil {

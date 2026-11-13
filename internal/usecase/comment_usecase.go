@@ -45,10 +45,22 @@ func (u *commentUsecase) CreateComment(
 		return nil, err
 	}
 
+	// If replying to another comment, verify parent comment exists
+	if req.ParentID != nil {
+		parentComment, err := u.commentRepo.GetByID(ctx, *req.ParentID)
+		if err != nil {
+			return nil, err
+		}
+		if parentComment.IssueID != issue.ID {
+			return nil, domain.ErrInvalidInput
+		}
+	}
+
 	comment := &domain.Comment{
-		IssueID: issue.ID,
-		UserID:  userID,
-		Content: content,
+		IssueID:  issue.ID,
+		UserID:   userID,
+		ParentID: req.ParentID,
+		Content:  content,
 	}
 
 	if err := u.commentRepo.Create(ctx, comment); err != nil {

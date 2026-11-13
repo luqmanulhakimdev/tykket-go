@@ -11,16 +11,19 @@ type Comment struct {
 	ID        uuid.UUID  `json:"id"`
 	IssueID   uuid.UUID  `json:"issue_id"`
 	UserID    uuid.UUID  `json:"user_id"`
+	ParentID  *uuid.UUID `json:"parent_id,omitempty"`
 	Content   string     `json:"content"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 
-	User *User `json:"user,omitempty"`
+	User    *User     `json:"user,omitempty"`
+	Replies []Comment `json:"replies,omitempty"`
 }
 
 type CreateCommentRequest struct {
-	Content string `json:"content" validate:"required,min=1,max=10000"`
+	ParentID *uuid.UUID `json:"parent_id,omitempty"`
+	Content  string     `json:"content" validate:"required,min=1,max=50000"`
 }
 
 type UpdateCommentRequest struct {
