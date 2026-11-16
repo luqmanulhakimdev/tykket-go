@@ -46,11 +46,17 @@ func (u *projectUsecase) CreateProject(ctx context.Context, userID uuid.UUID, re
 		return nil, err
 	}
 
+	pType := domain.ProjectTypeScrum
+	if req.Type != nil && *req.Type != "" {
+		pType = *req.Type
+	}
+
 	project := &domain.Project{
 		ID:          uuid.New(),
 		Name:        strings.TrimSpace(req.Name),
 		Key:         key,
 		Description: req.Description,
+		Type:        pType,
 		OwnerID:     userID,
 	}
 
@@ -98,6 +104,9 @@ func (u *projectUsecase) UpdateProject(ctx context.Context, userID, projectID uu
 
 	project.Name = strings.TrimSpace(req.Name)
 	project.Description = req.Description
+	if req.Type != nil && *req.Type != "" {
+		project.Type = *req.Type
+	}
 
 	if err := u.projectRepo.Update(ctx, project); err != nil {
 		return nil, err

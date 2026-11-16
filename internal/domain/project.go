@@ -7,11 +7,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type ProjectType string
+
+const (
+	ProjectTypeScrum  ProjectType = "SCRUM"
+	ProjectTypeKanban ProjectType = "KANBAN"
+)
+
 type Project struct {
 	ID           uuid.UUID       `json:"id"`
 	Name         string          `json:"name"`
 	Key          string          `json:"key"`
 	Description  *string         `json:"description,omitempty"`
+	Type         ProjectType     `json:"type"`
 	OwnerID      uuid.UUID       `json:"owner_id"`
 	IssueCounter int64           `json:"issue_counter"`
 	CreatedAt    time.Time       `json:"created_at"`
@@ -22,14 +30,16 @@ type Project struct {
 }
 
 type CreateProjectRequest struct {
-	Name        string  `json:"name" validate:"required,min=2,max=150"`
-	Key         string  `json:"key" validate:"required,min=2,max=10,alphanum"`
-	Description *string `json:"description,omitempty" validate:"omitempty,max=1000"`
+	Name        string        `json:"name" validate:"required,min=2,max=150"`
+	Key         string        `json:"key" validate:"required,min=2,max=10,alphanum"`
+	Description *string       `json:"description,omitempty" validate:"omitempty,max=1000"`
+	Type        *ProjectType  `json:"type,omitempty" validate:"omitempty,oneof=SCRUM KANBAN"`
 }
 
 type UpdateProjectRequest struct {
-	Name        string  `json:"name" validate:"required,min=2,max=150"`
-	Description *string `json:"description,omitempty" validate:"omitempty,max=1000"`
+	Name        string        `json:"name" validate:"required,min=2,max=150"`
+	Description *string       `json:"description,omitempty" validate:"omitempty,max=1000"`
+	Type        *ProjectType  `json:"type,omitempty" validate:"omitempty,oneof=SCRUM KANBAN"`
 }
 
 type AddMemberRequest struct {

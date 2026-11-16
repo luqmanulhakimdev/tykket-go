@@ -203,6 +203,13 @@ func (u *issueUsecase) UpdateIssue(ctx context.Context, projectID, issueID uuid.
 		}
 	}
 
+	if req.Status != nil && *req.Status != issue.Status {
+		if err := u.issueRepo.UpdatePositionAndStatus(ctx, issue.ID, req.Status, issue.Position, issue.SprintID); err != nil {
+			return nil, err
+		}
+		issue.Status = *req.Status
+	}
+
 	if err := u.issueRepo.Update(ctx, issue); err != nil {
 		return nil, err
 	}

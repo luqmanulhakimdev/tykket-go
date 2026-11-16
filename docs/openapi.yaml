@@ -126,7 +126,14 @@ paths:
                   description: 2-10 uppercase alphanumeric characters
                 description:
                   type: string
+                type:
+                  type: string
+                  enum: [SCRUM, KANBAN]
                   example: iOS and Android client applications
+                type:
+                  type: string
+                  enum: [SCRUM, KANBAN]
+                  default: SCRUM
       responses:
         201:
           description: Project created
@@ -173,6 +180,9 @@ paths:
                   type: string
                 description:
                   type: string
+                type:
+                  type: string
+                  enum: [SCRUM, KANBAN]
       responses:
         200:
           description: Project updated
@@ -435,7 +445,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE]
+            enum: [TODO, IN_PROGRESS, IN_REVIEW, IN_QA, READY_FOR_RELEASE, DONE]
         - name: assignee_id
           in: query
           schema:
@@ -489,6 +499,9 @@ paths:
                   example: Implement user session management
                 description:
                   type: string
+                type:
+                  type: string
+                  enum: [SCRUM, KANBAN]
                 sprint_id:
                   type: string
                   format: uuid
@@ -560,7 +573,7 @@ paths:
               properties:
                 status:
                   type: string
-                  enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE]
+                  enum: [TODO, IN_PROGRESS, IN_REVIEW, IN_QA, READY_FOR_RELEASE, DONE]
                 position:
                   type: number
                   format: double

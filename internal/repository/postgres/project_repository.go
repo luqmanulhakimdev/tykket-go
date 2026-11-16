@@ -24,10 +24,13 @@ func (r *projectRepository) Create(ctx context.Context, p *domain.Project) error
 	if p.ID == uuid.Nil {
 		p.ID = uuid.New()
 	}
+	if p.Type == "" {
+		p.Type = domain.ProjectTypeScrum
+	}
 
 	query := `
-		INSERT INTO projects (id, name, key, description, owner_id, issue_counter, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, 0, NOW(), NOW())
+		INSERT INTO projects (id, name, key, description, owner_id, issue_counter, type, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, 0, $6, NOW(), NOW())
 		RETURNING created_at, updated_at
 	`
 	err := r.pool.QueryRow(ctx, query,
@@ -36,6 +39,7 @@ func (r *projectRepository) Create(ctx context.Context, p *domain.Project) error
 		p.Key,
 		p.Description,
 		p.OwnerID,
+		p.Type,
 	).Scan(&p.CreatedAt, &p.UpdatedAt)
 
 	if err != nil {
@@ -52,7 +56,7 @@ func (r *projectRepository) Create(ctx context.Context, p *domain.Project) error
 func (r *projectRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Project, error) {
 	query := `
 		SELECT 
-			p.id, p.name, p.key, p.description, p.owner_id, p.issue_counter, p.created_at, p.updated_at, p.deleted_at,
+			p.id, p.name, p.key, p.description, p.owner_id, p.issue_counter, p.type, p.created_at, p.updated_at, p.deleted_at,
 			u.id, u.email, u.name, u.avatar_url
 		FROM projects p
 		JOIN users u ON p.owner_id = u.id AND u.deleted_at IS NULL
@@ -69,6 +73,7 @@ func (r *projectRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 		&p.Description,
 		&p.OwnerID,
 		&p.IssueCounter,
+		&p.Type,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 		&p.DeletedAt,
@@ -90,7 +95,7 @@ func (r *projectRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.
 func (r *projectRepository) GetByKey(ctx context.Context, key string) (*domain.Project, error) {
 	query := `
 		SELECT 
-			p.id, p.name, p.key, p.description, p.owner_id, p.issue_counter, p.created_at, p.updated_at, p.deleted_at,
+			p.id, p.name, p.key, p.description, p.owner_id, p.issue_counter, p.type, p.created_at, p.updated_at, p.deleted_at,
 			u.id, u.email, u.name, u.avatar_url
 		FROM projects p
 		JOIN users u ON p.owner_id = u.id AND u.deleted_at IS NULL
@@ -107,6 +112,7 @@ func (r *projectRepository) GetByKey(ctx context.Context, key string) (*domain.P
 		&p.Description,
 		&p.OwnerID,
 		&p.IssueCounter,
+		&p.Type,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 		&p.DeletedAt,
@@ -128,7 +134,7 @@ func (r *projectRepository) GetByKey(ctx context.Context, key string) (*domain.P
 func (r *projectRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Project, error) {
 	query := `
 		SELECT DISTINCT
-			p.id, p.name, p.key, p.description, p.owner_id, p.issue_counter, p.created_at, p.updated_at, p.deleted_at,
+			p.id, p.name, p.key, p.description, p.owner_id, p.issue_counter, p.type, p.created_at, p.updated_at, p.deleted_at,
 			u.id, u.email, u.name, u.avatar_url
 		FROM projects p
 		JOIN users u ON p.owner_id = u.id AND u.deleted_at IS NULL
@@ -155,6 +161,7 @@ func (r *projectRepository) ListByUserID(ctx context.Context, userID uuid.UUID) 
 			&p.Description,
 			&p.OwnerID,
 			&p.IssueCounter,
+			&p.Type,
 			&p.CreatedAt,
 			&p.UpdatedAt,
 			&p.DeletedAt,
@@ -172,13 +179,16 @@ func (r *projectRepository) ListByUserID(ctx context.Context, userID uuid.UUID) 
 }
 
 func (r *projectRepository) Update(ctx context.Context, p *domain.Project) error {
+	if p.Type == "" {
+		p.Type = domain.ProjectTypeScrum
+	}
 	query := `
 		UPDATE projects
-		SET name = $1, description = $2, updated_at = NOW()
-		WHERE id = $3 AND deleted_at IS NULL
+		SET name = $1, description = $2, type = $3, updated_at = NOW()
+		WHERE id = $4 AND deleted_at IS NULL
 		RETURNING updated_at
 	`
-	err := r.pool.QueryRow(ctx, query, p.Name, p.Description, p.ID).Scan(&p.UpdatedAt)
+	err := r.pool.QueryRow(ctx, query, p.Name, p.Description, p.Type, p.ID).Scan(&p.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ErrNotFound

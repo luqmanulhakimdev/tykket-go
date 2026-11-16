@@ -7,7 +7,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'MEMBER';
 INSERT INTO users (id, email, name, password_hash, auth_provider, avatar_url, role, created_at, updated_at)
 VALUES
     (
-        'a0000000-0000-0000-0000-000000000001',
+        gen_random_uuid(),
         'owner@tykket.dev',
         'Alex Mercer',
         crypt('password123', gen_salt('bf', 10)),
@@ -18,7 +18,7 @@ VALUES
         NOW()
     ),
     (
-        'a0000000-0000-0000-0000-000000000002',
+        gen_random_uuid(),
         'admin@tykket.dev',
         'Sarah Connor',
         crypt('password123', gen_salt('bf', 10)),
@@ -29,7 +29,7 @@ VALUES
         NOW()
     ),
     (
-        'a0000000-0000-0000-0000-000000000003',
+        gen_random_uuid(),
         'member@tykket.dev',
         'David Kim',
         crypt('password123', gen_salt('bf', 10)),
@@ -40,7 +40,7 @@ VALUES
         NOW()
     ),
     (
-        'a0000000-0000-0000-0000-000000000004',
+        gen_random_uuid(),
         'viewer@tykket.dev',
         'Emma Watson',
         crypt('password123', gen_salt('bf', 10)),

@@ -101,8 +101,8 @@ func seedData(ctx context.Context, pool *pgxpool.Pool) error {
 	// 4. Create Project
 	projectID := uuid.New()
 	_, err = pool.Exec(ctx, `
-		INSERT INTO projects (id, name, key, description, owner_id, issue_counter, created_at, updated_at)
-		VALUES ($1, 'Tykket Core Platform', 'TYK', 'Main workspace for Tykket core frontend & backend development', $2, 11, NOW(), NOW())
+		INSERT INTO projects (id, name, key, description, owner_id, issue_counter, type, created_at, updated_at)
+		VALUES ($1, 'Tykket Core Platform', 'TYK', 'Main workspace for Tykket core frontend & backend development', $2, 11, 'SCRUM', NOW(), NOW())
 	`, projectID, ownerID)
 	if err != nil {
 		return fmt.Errorf("failed to insert project: %w", err)

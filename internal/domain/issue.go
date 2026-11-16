@@ -20,10 +20,12 @@ const (
 type IssueStatus string
 
 const (
-	IssueStatusTodo       IssueStatus = "TODO"
-	IssueStatusInProgress IssueStatus = "IN_PROGRESS"
-	IssueStatusInReview   IssueStatus = "IN_REVIEW"
-	IssueStatusDone       IssueStatus = "DONE"
+	IssueStatusTodo            IssueStatus = "TODO"
+	IssueStatusInProgress      IssueStatus = "IN_PROGRESS"
+	IssueStatusInReview        IssueStatus = "IN_REVIEW"
+	IssueStatusInQA            IssueStatus = "IN_QA"
+	IssueStatusReadyForRelease IssueStatus = "READY_FOR_RELEASE"
+	IssueStatusDone            IssueStatus = "DONE"
 )
 
 type IssuePriority string
@@ -65,7 +67,7 @@ type CreateIssueRequest struct {
 	SprintID    *uuid.UUID    `json:"sprint_id,omitempty"`
 	ParentID    *uuid.UUID    `json:"parent_id,omitempty"`
 	Type        IssueType     `json:"type" validate:"required,oneof=EPIC STORY TASK BUG SUBTASK"`
-	Status      *IssueStatus  `json:"status,omitempty" validate:"omitempty,oneof=TODO IN_PROGRESS IN_REVIEW DONE"`
+	Status      *IssueStatus  `json:"status,omitempty" validate:"omitempty,oneof=TODO IN_PROGRESS IN_REVIEW IN_QA READY_FOR_RELEASE DONE"`
 	Priority    IssuePriority `json:"priority" validate:"required,oneof=LOW MEDIUM HIGH URGENT"`
 	Title       string        `json:"title" validate:"required,min=2,max=255"`
 	Description *string       `json:"description,omitempty"`
@@ -78,6 +80,7 @@ type UpdateIssueRequest struct {
 	SprintID    *uuid.UUID     `json:"sprint_id,omitempty"`
 	ParentID    *uuid.UUID     `json:"parent_id,omitempty"`
 	Type        *IssueType     `json:"type,omitempty" validate:"omitempty,oneof=EPIC STORY TASK BUG SUBTASK"`
+	Status      *IssueStatus   `json:"status,omitempty" validate:"omitempty,oneof=TODO IN_PROGRESS IN_REVIEW IN_QA READY_FOR_RELEASE DONE"`
 	Priority    *IssuePriority `json:"priority,omitempty" validate:"omitempty,oneof=LOW MEDIUM HIGH URGENT"`
 	Title       *string        `json:"title,omitempty" validate:"omitempty,min=2,max=255"`
 	Description *string        `json:"description,omitempty"`
@@ -86,7 +89,7 @@ type UpdateIssueRequest struct {
 }
 
 type MoveIssueRequest struct {
-	Status   *IssueStatus `json:"status,omitempty" validate:"omitempty,oneof=TODO IN_PROGRESS IN_REVIEW DONE"`
+	Status   *IssueStatus `json:"status,omitempty" validate:"omitempty,oneof=TODO IN_PROGRESS IN_REVIEW IN_QA READY_FOR_RELEASE DONE"`
 	Position float64      `json:"position" validate:"required"`
 	SprintID *uuid.UUID   `json:"sprint_id,omitempty"` // allow moving between sprint/backlog during reorder
 }
